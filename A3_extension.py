@@ -89,12 +89,16 @@ class NaiveBayesClassifier:
         Extension
         """
         # TF-IDF
-        for word in unique_word:
-            for abstract in abstracts:
-                if word in self.word_idf:
-                    self.word_idf[word] += 1
-                else:
-                    self.word_idf[word] = 1
+        self.word_idf = [0] * len(unique_word)
+        self.word_idf = dict(zip(unique_word, self.word_idf))
+        for i in range(len(abstracts)):
+            abstract = abstracts[i].split()
+            abstract = set(abstract)
+            for word in abstract:
+                self.word_idf[word] += 1
+        for word in self.word_idf:
+            self.word_idf[word] = np.log((self.total_classes_number / self.word_idf[word]))
+
 
     def predict(self, abstracts, ids):
         result = []
@@ -112,7 +116,10 @@ class NaiveBayesClassifier:
                         word_number = word_number_dict[word]
                     else:
                         word_number = 0
-                    prob_word = np.log((word_number + 1) / (total_words_number + self.unique_word_number))
+                    if word in self.word_idf:
+                        prob_word = np.log(((word_number + 1) * self.word_idf[word]) / ((total_words_number * self.word_idf[word]) + self.unique_word_number))
+                    else:
+                        prob_word = np.log((word_number + 1) / (total_words_number + self.unique_word_number))
                     prob_x = prob_x + prob_word
                 prob = prob_c + prob_x
                 id_result_prob.append([c, prob])
@@ -142,3 +149,10 @@ for r in result:
 print("Total incorrect:", count)
 print("Total instance:", len(test_x))
 print("Accuracy:", 1 - (count / len(test_x)))
+
+# print()
+# print("For Full Data:")
+# nbc_full = NaiveBayesClassifier()
+# nbc_full.fit(train_abstracts, classes)
+# print(len(nbc_full.class_word_number_dict["B"]))
+# print(nbc_full.class_total_words_dict)
